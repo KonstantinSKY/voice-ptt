@@ -45,7 +45,12 @@ impl SystemInjector {
     }
 
     /// Injects text as keyboard input.
-    pub async fn type_text(text: &str, _delay_ms: u64, initial_delay_ms: u64) -> Result<()> {
+    pub async fn type_text(
+        text: &str,
+        _delay_ms: u64,
+        initial_delay_ms: u64,
+        config: &crate::config::AppConfig,
+    ) -> Result<()> {
         if text.is_empty() {
             return Ok(());
         }
@@ -55,22 +60,58 @@ impl SystemInjector {
 
         #[cfg(target_os = "linux")]
         {
-            // Use xclip to set the clipboard selection
+            // Use xsel to set the clipboard selection
             use std::io::Write;
-            let mut child = Command::new("xclip")
-                .args(&["-selection", "clipboard", "-in"])
+            let mut child = Command::new("xsel")
+                .args(&["--clipboard", "--input"])
                 .stdin(std::process::Stdio::piped())
                 .spawn()
-                .context("Failed to execute xclip. Is it installed?")?;
+                .context("Failed to execute xsel. Is it installed?")?;
 
             if let Some(mut stdin) = child.stdin.take() {
                 stdin.write_all(text.as_bytes())?;
             }
+            // stdin is dropped here, closing the pipe.
+            // xsel reads until EOF, then takes over the clipboard and exits.
             child.wait()?;
 
-            // Simulate Ctrl+V to paste the content
+            // Small delay to ensure the clipboard is ready before we simulate the paste command
+            tokio::time::sleep(Duration::from_millis(50)).await;
+
+            // Detect if the active window has an override in the config
+            let mut paste_key = "ctrl+v".to_string();
+
+            let output = Command::new("xdotool")
+                .args(&["getactivewindow", "getwindowclassname"])
+                .output();
+
+            if let Ok(out) = output {
+                let window_class = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                let lower_class = window_class.to_lowercase();
+                
+                println!("📌 Detected window class: '{}'", window_class);
+                
+                // Case-insensitive lookup in overrides map
+                let mut found = false;
+                for (name, shortcut) in &config.paste_overrides {
+                    if name.to_lowercase() == lower_class {
+                        paste_key = shortcut.clone();
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if !found {
+                    // Default to ctrl+v if no match found in config
+                    paste_key = "ctrl+v".to_string();
+                }
+                
+                println!("⌨️ Using paste shortcut: '{}'", paste_key);
+            }
+
+            // Simulate the paste shortcut (either default ctrl+v or override from config)
             Command::new("xdotool")
-                .args(&["key", "--clearmodifiers", "ctrl+v"])
+                .args(&["key", "--clearmodifiers", &paste_key])
                 .status()
                 .context("Failed to execute xdotool for pasting")?;
         }
@@ -99,17 +140,6 @@ impl SystemInjector {
         Ok(())
     }
 
-    #[cfg(any(target_os = "linux", test))]
-    fn get_xdotool_args(text: &str, delay: u64) -> Vec<String> {
-        vec![
-            "type".to_string(),
-            "--clearmodifiers".to_string(),
-            "--delay".to_string(),
-            delay.to_string(),
-            text.to_string(),
-        ]
-    }
-
     /// Verifies that required system tools are available.
     pub fn check_dependencies() -> Result<()> {
         #[cfg(target_os = "linux")]
@@ -117,36 +147,12 @@ impl SystemInjector {
             if Command::new("xdotool").arg("--version").output().is_err() {
                 anyhow::bail!("'xdotool' is required but not found in PATH.");
             }
-            if Command::new("xclip").arg("-version").output().is_err() {
-                anyhow::bail!("'xclip' is required for fast text injection. Please install it (e.g., sudo apt install xclip).");
+            if Command::new("xsel").arg("--version").output().is_err() {
+                anyhow::bail!("'xsel' is required for fast text injection. Please install it (e.g., sudo pacman -S xsel).");
             }
         }
         
         // MacOS usually has osascript and afplay by default
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_xdotool_args_formation() {
-        let text = "Hello World";
-        let delay = 50;
-        let args = SystemInjector::get_xdotool_args(text, delay);
-
-        assert_eq!(args[0], "type");
-        assert_eq!(args[1], "--clearmodifiers");
-        assert_eq!(args[2], "--delay");
-        assert_eq!(args[3], "50");
-        assert_eq!(args[4], "Hello World");
-    }
-
-    #[test]
-    fn test_empty_text_args() {
-        let args = SystemInjector::get_xdotool_args("", 0);
-        assert_eq!(args[4], "");
     }
 }

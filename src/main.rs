@@ -121,7 +121,8 @@ async fn main() -> Result<()> {
     let device_state = DeviceState::new();
     let (sound_start, sound_end) = app_config.get_sound_paths();
 
-    println!("🚀 Voice PTT is ready! Hold [{:?}] to speak.", ptt_key);
+    let version_info = "v0.1.2 (dynamic-paste)";
+    println!("🚀 Voice PTT {} is ready! Hold [{:?}] to speak.", version_info, ptt_key);
 
     // 4. Main Event Loop
     loop {
@@ -199,6 +200,7 @@ async fn main() -> Result<()> {
                                             &text,
                                             app_config_clone.typing_delay_ms,
                                             app_config_clone.initial_delay_ms,
+                                            &app_config_clone,
                                         )
                                         .await
                                         {
@@ -247,6 +249,7 @@ async fn main() -> Result<()> {
                                                 &text,
                                                 app_config_clone.typing_delay_ms,
                                                 app_config_clone.initial_delay_ms,
+                                                &app_config_clone,
                                             )
                                             .await
                                             {

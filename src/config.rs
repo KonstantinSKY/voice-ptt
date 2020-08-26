@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use device_query::Keycode;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::str::FromStr;
@@ -23,6 +24,8 @@ pub struct AppConfig {
     pub linux_sound_start_path: Option<String>,
     #[allow(dead_code)]
     pub linux_sound_end_path: Option<String>,
+    #[serde(default)]
+    pub paste_overrides: HashMap<String, String>,
 }
 
 impl Default for AppConfig {
@@ -45,6 +48,7 @@ impl Default for AppConfig {
             linux_sound_end_path: Some(
                 "/usr/share/sounds/freedesktop/stereo/screen-capture.oga".to_string(),
             ),
+            paste_overrides: HashMap::new(),
         }
     }
 }
