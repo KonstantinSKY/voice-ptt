@@ -1,0 +1,11 @@
+ptt_key = "RControl"
+typing_delay_ms = 50
+initial_delay_ms = 150
+model = "whisper-1"
+# language = "ru" # Uncomment to force Russian language
+
+# Sound Settings
+sound_enabled = true
+# Use standard system sounds (install sound-theme-freedesktop if missing)
+sound_start_path = "/usr/share/sounds/freedesktop/stereo/audio-volume-change.oga"
+sound_end_path = "/usr/share/sounds/freedesktop/stereo/screen-capture.oga"
