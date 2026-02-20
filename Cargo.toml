@@ -2,6 +2,13 @@
 name = "voice-ptt"
 version = "0.1.0"
 edition = "2021"
+description = "A professional-grade Push-to-Talk voice dictation tool for Linux (X11) written in Rust."
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/yourusername/voice-ptt"
+keywords = ["rust", "linux", "voice-to-text", "whisper", "automation", "x11"]
+categories = ["command-line-utilities", "accessibility", "multimedia::audio"]
 
 [dependencies]
 anyhow = "1.0"
