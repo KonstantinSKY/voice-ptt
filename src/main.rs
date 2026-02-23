@@ -56,6 +56,7 @@ async fn main() -> Result<()> {
     // 3. Components
     let whisper_client = Arc::new(WhisperClient::new(api_key));
     let device_state = DeviceState::new();
+    let (sound_start, sound_end) = app_config.get_sound_paths();
 
     println!("🚀 Voice PTT is ready! Hold [{:?}] to speak.", ptt_key);
 
@@ -66,7 +67,7 @@ async fn main() -> Result<()> {
         if keys.contains(&ptt_key) {
             if !is_recording.load(Ordering::Relaxed) {
                 // Start Recording
-                SystemInjector::play_sound(app_config.sound_enabled, &app_config.sound_start_path);
+                SystemInjector::play_sound(app_config.sound_enabled, &sound_start);
                 println!("🎙️ Recording...");
 
                 if let Ok(mut buffer) = audio_buffer.lock() {
@@ -77,7 +78,7 @@ async fn main() -> Result<()> {
         } else if is_recording.load(Ordering::Relaxed) {
             // Stop Recording & Process
             is_recording.store(false, Ordering::Relaxed);
-            SystemInjector::play_sound(app_config.sound_enabled, &app_config.sound_end_path);
+            SystemInjector::play_sound(app_config.sound_enabled, &sound_end);
             println!("⚙️ Processing...");
 
             let buffer_snapshot: Vec<i16> = {

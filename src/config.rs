@@ -15,6 +15,10 @@ pub struct AppConfig {
     pub sound_enabled: bool,
     pub sound_start_path: String,
     pub sound_end_path: String,
+    pub macos_sound_start_path: Option<String>,
+    pub macos_sound_end_path: Option<String>,
+    pub linux_sound_start_path: Option<String>,
+    pub linux_sound_end_path: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -29,6 +33,14 @@ impl Default for AppConfig {
             sound_start_path: "/usr/share/sounds/freedesktop/stereo/audio-volume-change.oga"
                 .to_string(),
             sound_end_path: "/usr/share/sounds/freedesktop/stereo/screen-capture.oga".to_string(),
+            macos_sound_start_path: Some("/System/Library/Sounds/Tink.aiff".to_string()),
+            macos_sound_end_path: Some("/System/Library/Sounds/Morse.aiff".to_string()),
+            linux_sound_start_path: Some(
+                "/usr/share/sounds/freedesktop/stereo/audio-volume-change.oga".to_string(),
+            ),
+            linux_sound_end_path: Some(
+                "/usr/share/sounds/freedesktop/stereo/screen-capture.oga".to_string(),
+            ),
         }
     }
 }
@@ -44,6 +56,34 @@ impl AppConfig {
             Ok(config)
         } else {
             Ok(Self::default())
+        }
+    }
+
+    /// Returns (start_path, end_path) based on current OS
+    pub fn get_sound_paths(&self) -> (String, String) {
+        #[cfg(target_os = "macos")]
+        {
+            let start = self
+                .macos_sound_start_path
+                .as_ref()
+                .unwrap_or(&self.sound_start_path);
+            let end = self
+                .macos_sound_end_path
+                .as_ref()
+                .unwrap_or(&self.sound_end_path);
+            (start.clone(), end.clone())
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let start = self
+                .linux_sound_start_path
+                .as_ref()
+                .unwrap_or(&self.sound_start_path);
+            let end = self
+                .linux_sound_end_path
+                .as_ref()
+                .unwrap_or(&self.sound_end_path);
+            (start.clone(), end.clone())
         }
     }
 

@@ -6,6 +6,15 @@ model = "whisper-1"
 
 # Sound Settings
 sound_enabled = true
-# Use standard system sounds (install sound-theme-freedesktop if missing)
+
+# Default paths (used if OS-specific paths are missing)
 sound_start_path = "/usr/share/sounds/freedesktop/stereo/audio-volume-change.oga"
 sound_end_path = "/usr/share/sounds/freedesktop/stereo/screen-capture.oga"
+
+# macOS Specific Sounds
+macos_sound_start_path = "/System/Library/Sounds/Tink.aiff"
+macos_sound_end_path = "/System/Library/Sounds/Morse.aiff"
+
+# Linux Specific Sounds
+linux_sound_start_path = "/usr/share/sounds/freedesktop/stereo/audio-volume-change.oga"
+linux_sound_end_path = "/usr/share/sounds/freedesktop/stereo/screen-capture.oga"
