@@ -15,9 +15,13 @@ pub struct AppConfig {
     pub sound_enabled: bool,
     pub sound_start_path: String,
     pub sound_end_path: String,
+    #[allow(dead_code)]
     pub macos_sound_start_path: Option<String>,
+    #[allow(dead_code)]
     pub macos_sound_end_path: Option<String>,
+    #[allow(dead_code)]
     pub linux_sound_start_path: Option<String>,
+    #[allow(dead_code)]
     pub linux_sound_end_path: Option<String>,
 }
 

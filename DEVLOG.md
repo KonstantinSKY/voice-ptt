@@ -18,3 +18,17 @@
 - [x] `cargo test` passes all checks.
 - [x] No traces of development AI labels.
 - [x] Project structure is idiomatic and minimalist.
+
+## 2026-02-23: Cross-Platform (macOS) Stability
+**Status:** Multi-platform Support Finalized
+
+### Changes
+- **macOS Unicode Support:** Switched to clipboard-based injection (`osascript`) for macOS to ensure Russian and other international characters are handled correctly.
+- **Audio Improvements:** Enhanced `afplay` error handling on macOS to provide descriptive logs if playback fails.
+- **Bug Fixes:** 
+  - Restored `get_xdotool_args` helper function to fix broken unit tests.
+  - Eliminated build warnings for unused variables and platform-specific configuration fields using `#[allow(dead_code)]`.
+- **Documentation:** Updated `README.md` to reflect cross-platform (Linux/macOS) compatibility and system requirements.
+
+### Rationale
+- The tool is now fully usable on both Linux (X11) and macOS with equivalent functionality and consistent audio feedback.

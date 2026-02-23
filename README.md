@@ -2,11 +2,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20(X11)-lightgrey.svg)](https://en.wikipedia.org/wiki/X_Window_System)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg)](https://github.com/yourusername/voice-ptt)
 
-**Voice PTT** is a high-performance, low-latency Push-to-Talk (PTT) dictation tool built in Rust. It enables seamless voice-to-text input across all Linux (X11) applications by capturing audio via global hotkeys and transcribing it using OpenAI's Whisper API.
+**Voice PTT** is a high-performance, low-latency Push-to-Talk (PTT) dictation tool built in Rust. It enables seamless voice-to-text input across **Linux (X11)** and **macOS** applications by capturing audio via global hotkeys and transcribing it using OpenAI's Whisper API.
 
-Unlike heavy Electron-based or Python-scripted alternatives, **Voice PTT** is a compiled binary designed for power users who value speed, minimalism, and system integration (especially in tiling window managers like i3wm, Sway, or bspwm).
+Unlike heavy Electron-based or Python-scripted alternatives, **Voice PTT** is a compiled binary designed for power users who value speed, minimalism, and system integration.
 
 ---
 
@@ -15,7 +15,9 @@ Unlike heavy Electron-based or Python-scripted alternatives, **Voice PTT** is a 
 - **Global Hotkey Integration:** Native global key state monitoring (uses `device_query`).
 - **Low-Latency Audio Pipeline:** Direct microphone access via `cpal` with support for multiple sample formats (F32, I16, U16).
 - **Intelligent Transcription:** Leverages OpenAI Whisper `whisper-1` for near-human accuracy in multiple languages.
-- **Universal Text Injection:** Simulates hardware keyboard events via `xdotool` for compatibility with terminals, IDEs, and browsers.
+- **Cross-Platform Text Injection:**
+  - **Linux (X11):** Simulates hardware keyboard events via `xdotool`.
+  - **macOS:** Uses `osascript` with clipboard integration for perfect Unicode/International support.
 - **Non-Blocking Architecture:** Asynchronous I/O powered by `tokio` ensures the UI/system remains responsive during processing.
 - **Minimal Footprint:** Single binary with zero background daemon overhead.
 
@@ -24,7 +26,7 @@ Unlike heavy Electron-based or Python-scripted alternatives, **Voice PTT** is a 
 1. **Detection:** The tool monitors the keyboard state globally. When the configured PTT key is held, the audio capture thread activates.
 2. **Capture:** High-fidelity audio is buffered in memory (RAM) to avoid disk I/O latency during recording.
 3. **Processing:** Upon key release, the buffer is converted to a compliant WAV format and streamed to the OpenAI API.
-4. **Injection:** The returned transcription is cleaned and "typed" into the currently active X11 window using synthetic keyboard events.
+4. **Injection:** The returned transcription is "typed" or "pasted" into the currently active window. On macOS, this uses the clipboard to ensure special characters (like Russian or Emoji) are handled correctly.
 
 ---
 
@@ -43,8 +45,12 @@ sudo pacman -S xdotool alsa-lib pulseaudio-utils
 sudo apt update && sudo apt install xdotool libasound2-dev pulseaudio-utils
 ```
 
+**macOS:**
+- No extra dependencies are required (uses built-in `osascript` and `afplay`).
+- **Note:** You may need to grant **Accessibility** permissions to your Terminal or IDE in `System Settings > Privacy & Security > Accessibility`.
+
 ### API Access
-An **OpenAI API Key** is required. Set it in your environment:
+An **OpenAI API Key** is required. Set it in your environment or a `.env` file in the same directory:
 ```bash
 export OPENAI_API_KEY='your-key-here'
 ```

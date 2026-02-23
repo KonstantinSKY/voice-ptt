@@ -15,7 +15,9 @@ impl SystemInjector {
         let _ = Command::new("paplay").arg(path).spawn().ok();
 
         #[cfg(target_os = "macos")]
-        let _ = Command::new("afplay").arg(path).spawn().ok();
+        if let Err(e) = Command::new("afplay").arg(path).spawn() {
+            eprintln!("❌ Failed to play sound {}: {}", path, e);
+        }
     }
 
     /// Sends a system notification.
@@ -43,7 +45,7 @@ impl SystemInjector {
     }
 
     /// Injects text as keyboard input.
-    pub async fn type_text(text: &str, delay_ms: u64, initial_delay_ms: u64) -> Result<()> {
+    pub async fn type_text(text: &str, _delay_ms: u64, initial_delay_ms: u64) -> Result<()> {
         if text.is_empty() {
             return Ok(());
         }
@@ -53,13 +55,7 @@ impl SystemInjector {
 
         #[cfg(target_os = "linux")]
         {
-            let args = vec![
-                "type".to_string(),
-                "--clearmodifiers".to_string(),
-                "--delay".to_string(),
-                delay_ms.to_string(),
-                text.to_string(),
-            ];
+            let args = Self::get_xdotool_args(text, _delay_ms);
             Command::new("xdotool")
                 .args(&args)
                 .status()
@@ -68,20 +64,37 @@ impl SystemInjector {
 
         #[cfg(target_os = "macos")]
         {
-            // AppleScript for typing. 
-            // Note: This requires Accessibility permissions for the terminal/app on macOS.
+            // For macOS, we use the clipboard to handle Unicode (like Russian) correctly.
+            // We save the current clipboard, set it to our text, paste it, and restore the old clipboard.
             let script = format!(
-                "tell application \"System Events\" to keystroke \"{}\"",
-                text.replace("\"", "\\\"")
+                "set oldClipboard to the clipboard\n\
+                 set the clipboard to \"{}\"\n\
+                 tell application \"System Events\"\n\
+                     keystroke \"v\" using command down\n\
+                 end tell\n\
+                 delay 0.1\n\
+                 set the clipboard to oldClipboard",
+                text.replace("\"", "\\\"").replace("\\", "\\\\")
             );
             Command::new("osascript")
                 .arg("-e")
                 .arg(script)
                 .status()
-                .context("Failed to execute osascript for typing")?;
+                .context("Failed to execute osascript for typing via clipboard")?;
         }
 
         Ok(())
+    }
+
+    #[cfg(any(target_os = "linux", test))]
+    fn get_xdotool_args(text: &str, delay: u64) -> Vec<String> {
+        vec![
+            "type".to_string(),
+            "--clearmodifiers".to_string(),
+            "--delay".to_string(),
+            delay.to_string(),
+            text.to_string(),
+        ]
     }
 
     /// Verifies that required system tools are available.
