@@ -55,11 +55,24 @@ impl SystemInjector {
 
         #[cfg(target_os = "linux")]
         {
-            let args = Self::get_xdotool_args(text, _delay_ms);
+            // Use xclip to set the clipboard selection
+            use std::io::Write;
+            let mut child = Command::new("xclip")
+                .args(&["-selection", "clipboard", "-in"])
+                .stdin(std::process::Stdio::piped())
+                .spawn()
+                .context("Failed to execute xclip. Is it installed?")?;
+
+            if let Some(mut stdin) = child.stdin.take() {
+                stdin.write_all(text.as_bytes())?;
+            }
+            child.wait()?;
+
+            // Simulate Ctrl+V to paste the content
             Command::new("xdotool")
-                .args(&args)
+                .args(&["key", "--clearmodifiers", "ctrl+v"])
                 .status()
-                .context("Failed to execute xdotool. Is it installed?")?;
+                .context("Failed to execute xdotool for pasting")?;
         }
 
         #[cfg(target_os = "macos")]
@@ -100,8 +113,13 @@ impl SystemInjector {
     /// Verifies that required system tools are available.
     pub fn check_dependencies() -> Result<()> {
         #[cfg(target_os = "linux")]
-        if Command::new("xdotool").arg("--version").output().is_err() {
-            anyhow::bail!("'xdotool' is required but not found in PATH.");
+        {
+            if Command::new("xdotool").arg("--version").output().is_err() {
+                anyhow::bail!("'xdotool' is required but not found in PATH.");
+            }
+            if Command::new("xclip").arg("-version").output().is_err() {
+                anyhow::bail!("'xclip' is required for fast text injection. Please install it (e.g., sudo apt install xclip).");
+            }
         }
         
         // MacOS usually has osascript and afplay by default

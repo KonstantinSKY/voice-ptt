@@ -2,6 +2,7 @@ use crate::config::AppConfig;
 use anyhow::{Context, Result};
 use reqwest::{multipart, Client};
 use serde::Deserialize;
+use std::path::Path;
 
 #[derive(Deserialize)]
 struct TranscriptionResponse {
@@ -41,10 +42,17 @@ impl WhisperClient {
             writer.finalize()?;
         }
 
-        let file_content = tokio::fs::read(&file_path)
-            .await
-            .context("Failed to read temporary WAV file")?;
+        self.transcribe_wav_file(&file_path, config).await
+    }
 
+    pub async fn transcribe_wav_file(&self, file_path: &Path, config: &AppConfig) -> Result<String> {
+        let file_content = tokio::fs::read(file_path)
+            .await
+            .with_context(|| format!("Failed to read WAV file at {}", file_path.display()))?;
+        self.transcribe_wav_bytes(file_content, config).await
+    }
+
+    async fn transcribe_wav_bytes(&self, file_content: Vec<u8>, config: &AppConfig) -> Result<String> {
         let part = multipart::Part::bytes(file_content)
             .file_name("recording.wav")
             .mime_str("audio/wav")?;

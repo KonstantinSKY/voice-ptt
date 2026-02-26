@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::traits::{DeviceTrait, HostTrait};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -38,7 +38,7 @@ impl AudioSystem {
         &self,
         audio_buffer: Arc<Mutex<Vec<i16>>>,
         is_recording: Arc<AtomicBool>,
-    ) -> Result<impl StreamTrait> {
+    ) -> Result<cpal::Stream> {
         let writer_buffer = audio_buffer;
         let reader_is_recording = is_recording;
 
