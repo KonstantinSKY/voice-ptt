@@ -179,9 +179,12 @@ async fn main() -> Result<()> {
                         SystemInjector::play_sound(app_config.sound_enabled, &sound_end);
                         println!("⚙️ Processing...");
 
-                        let buffer_snapshot: Vec<i16> = {
-                            let buf = audio_buffer.lock().unwrap();
-                            buf.clone()
+                        let buffer_snapshot: Vec<i16> = match audio_buffer.lock() {
+                            Ok(buf) => buf.clone(),
+                            Err(e) => {
+                                eprintln!("❌ Failed to lock audio buffer: {}", e);
+                                continue;
+                            }
                         };
 
                         if !buffer_snapshot.is_empty() {

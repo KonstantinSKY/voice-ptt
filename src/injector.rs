@@ -11,37 +11,52 @@ impl SystemInjector {
             return;
         }
 
-        #[cfg(target_os = "linux")]
-        let _ = Command::new("paplay").arg(path).spawn().ok();
+        let path = path.to_string();
+        std::thread::spawn(move || {
+            #[cfg(target_os = "linux")]
+            let result = Command::new("paplay").arg(&path).spawn();
 
-        #[cfg(target_os = "macos")]
-        if let Err(e) = Command::new("afplay").arg(path).spawn() {
-            eprintln!("❌ Failed to play sound {}: {}", path, e);
-        }
+            #[cfg(target_os = "macos")]
+            let result = Command::new("afplay").arg(&path).spawn();
+
+            match result {
+                Ok(mut child) => { let _ = child.wait(); }
+                Err(e) => eprintln!("❌ Failed to play sound {}: {}", path, e),
+            }
+        });
     }
 
     /// Sends a system notification.
     pub fn notify(title: &str, message: &str) {
-        #[cfg(target_os = "linux")]
-        let _ = Command::new("notify-send")
-            .arg(title)
-            .arg(message)
-            .arg("-t")
-            .arg("5000")
-            .spawn();
-
-        #[cfg(target_os = "macos")]
-        {
-            let script = format!(
-                "display notification \"{}\" with title \"{}\"",
-                message.replace("\"", "\\\""),
-                title.replace("\"", "\\\"")
-            );
-            let _ = Command::new("osascript")
-                .arg("-e")
-                .arg(script)
+        let title = title.to_string();
+        let message = message.to_string();
+        std::thread::spawn(move || {
+            #[cfg(target_os = "linux")]
+            let result = Command::new("notify-send")
+                .arg(&title)
+                .arg(&message)
+                .arg("-t")
+                .arg("5000")
                 .spawn();
-        }
+
+            #[cfg(target_os = "macos")]
+            let result = {
+                let script = format!(
+                    "display notification \"{}\" with title \"{}\"",
+                    message.replace('\\', "\\\\").replace('"', "\\\""),
+                    title.replace('\\', "\\\\").replace('"', "\\\"")
+                );
+                Command::new("osascript")
+                    .arg("-e")
+                    .arg(script)
+                    .spawn()
+            };
+
+            match result {
+                Ok(mut child) => { let _ = child.wait(); }
+                Err(e) => eprintln!("❌ Failed to send notification: {}", e),
+            }
+        });
     }
 
     /// Injects text as keyboard input.
@@ -92,20 +107,13 @@ impl SystemInjector {
                 println!("📌 Detected window class: '{}'", window_class);
                 
                 // Case-insensitive lookup in overrides map
-                let mut found = false;
                 for (name, shortcut) in &config.paste_overrides {
                     if name.to_lowercase() == lower_class {
                         paste_key = shortcut.clone();
-                        found = true;
                         break;
                     }
                 }
-                
-                if !found {
-                    // Default to ctrl+v if no match found in config
-                    paste_key = "ctrl+v".to_string();
-                }
-                
+
                 println!("⌨️ Using paste shortcut: '{}'", paste_key);
             }
 
@@ -128,7 +136,7 @@ impl SystemInjector {
                  end tell\n\
                  delay 0.1\n\
                  set the clipboard to oldClipboard",
-                text.replace("\"", "\\\"").replace("\\", "\\\\")
+                text.replace('\\', "\\\\").replace('"', "\\\"")
             );
             Command::new("osascript")
                 .arg("-e")
