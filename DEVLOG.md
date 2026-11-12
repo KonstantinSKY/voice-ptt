@@ -45,3 +45,18 @@
 - [x] `cargo check` passes with no warnings.
 - [x] Successfully tested in environments with specific clipboard managers (Cursor/VSCode).
 - [x] Minimal impact on overall performance (50ms is imperceptible).
+
+## 2026-11-12: Fix Stuck Modifiers After Paste (Linux)
+**Status:** Fixed
+
+### Changes
+- **Removed `xdotool key --clearmodifiers`:** the flag re-presses the modifiers it cleared via XTEST after the paste keystroke. If the user releases the physical key in the meantime, the modifier stays "down" in the X server, and i3 bindings stop matching until the key is tapped again.
+- **Wait for modifier release:** before pasting, poll the keyboard (`device_query`, every 10 ms, up to 3 s) until no Ctrl/Shift/Alt/Super is held, then paste immediately. On timeout the paste is skipped, a notification is shown, and the text stays in the clipboard.
+- **Safety net:** after the paste, explicitly `xdotool keyup ctrl shift`.
+
+### Rationale
+- On EOS (i3) the keyboard became unusable for i3 bindings right after a dictated paste, which required a VM reboot. This happened twice: 2026-11-08 and 2026-11-12.
+
+### Final Verification
+- [x] `cargo build --release` and `cargo test` pass (4/4).
+- [x] Deployed to EOS; service running the new binary.
